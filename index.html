@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collect Blog AI Requirements</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .ifram-container {
+            width: 100%;
+            max-width: 100vw;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            border: none;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 20px);
+            /* Adjust width to accommodate padding */
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .requirement-inputs {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .requirement-inputs:last-child {
+            margin-bottom: 0;
+        }
+
+        .requirement-inputs input[type="text"] {
+            width: calc(100% - 100px);
+            /* Adjust width to accommodate buttons */
+            border-radius: 4px 0 0 4px;
+        }
+
+        .control-buttons {
+            display: flex;
+            flex-direction: column;
+            margin-left: 10px;
+        }
+
+        .control-buttons button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-bottom: 5px;
+        }
+
+        .control-buttons button:hover {
+            background-color: #45a049;
+        }
+
+        .remove-btn {
+            background-color: #f44336;
+        }
+
+        .remove-btn:hover {
+            background-color: #cc0000;
+        }
+
+        label[for="gpt3"],
+        label[for="gpt4"] {
+            display: inline-block;
+            margin-right: 10px;
+            /* Adjust spacing between labels */
+        }
+
+        input[type="submit"] {
+            padding: 12px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+
+        .error {
+            color: #f44336;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: none;
+            /* Initially hidden */
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Collect Blog AI Requirements</h2>
+        <form id="blogAiForm">
+            <label for="blogTitle">Blog Title:</label>
+            <input type="text" id="blogTitle" name="blogTitle" placeholder="Enter blog title" required>
+
+            <label for="aboutUsUrl">About Us URL:</label>
+            <input type="text" id="aboutUsUrl" name="aboutUsUrl" placeholder="Enter URL" required>
+            <span id="urlError" class="error"></span>
+
+
+            <div id="additionalRequirementsContainer">
+                <div class="requirement-inputs">
+                    <label for="additionalRequirements">Additional Requirement:</label>
+                    <input type="text" class="additional-requirement" name="additionalRequirements[]"
+                        placeholder="Enter additional requirement">
+                    <div class="control-buttons">
+                        <button type="button" class="add-btn" onclick="addRequirement()">+</button>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <label>Select model:</label>
+                <span> <input type="radio" id="gpt3" name="model" value="GPT3" required>
+                    <label for="gpt3"> GPT-3</label>
+                    <input type="radio" id="gpt4" name="model" value="GPT4">
+                    <label for="gpt4"> GPT-4</label></span>
+
+            </div>
+
+            <input type="submit" value="Submit">
+            <div class="loader" id="loader"></div>
+        </form>
+    </div>
+    <div class="ifram-container">
+        <iframe id="apiResponseFrame" frameborder="0" width="100%" height="100%" allowfullscreen></iframe>
+    </div>
+
+    <script>
+        document.getElementById('blogAiForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            // loader
+            const loader = document.getElementById('loader');
+            loader.style.display = 'inline-block';
+            // Disable submit button to prevent multiple submissions
+            const submitButton = document.querySelector('input[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.style.color = "#afafaf";
+
+            // Validate About Us URL
+            const aboutUsUrlInput = document.getElementById('aboutUsUrl');
+            const aboutUsUrl = aboutUsUrlInput.value.trim();
+            const urlError = document.getElementById('urlError');
+
+            if (!isValidURL(aboutUsUrl)) {
+                urlError.textContent = 'Please enter a valid URL.';
+                aboutUsUrlInput.focus();
+                return;
+            } else {
+                urlError.textContent = '';
+            }
+
+            // Get selected model
+            let selectedModel = document.querySelector('input[name="model"]:checked');
+            let modelValue = selectedModel ? selectedModel.value : '';
+
+            // Collect form data
+            const formData = {
+                "blogAi": {
+                    "scrap": {
+                        "AboutUs": [
+                            aboutUsUrl
+                        ]
+                    },
+                    "include": {
+                        "blogTitle": document.getElementById('blogTitle').value,
+                        "additionalRequirement": []
+                    }
+                },
+                "model": modelValue,
+                "version": 5
+            };
+
+            // Collect all additional requirements
+            const additionalRequirements = document.querySelectorAll('.additional-requirement');
+            additionalRequirements.forEach(input => {
+                if (input.value.trim() !== '') {
+                    formData.blogAi.include.additionalRequirement.push(input.value.trim());
+                }
+            });
+
+            console.log(formData);
+
+
+
+
+            postData("https://jbegfmkvttz4n3b7vgwy4gyxim0rlowj.lambda-url.us-east-1.on.aws", formData)
+                .then((data) => {
+                    console.log(data);
+
+                    submitButton.disabled = false;
+                    submitButton.style.color = "#ffffff";
+                    loader.style.display = 'none';
+                    // new window
+                    // const popupWindow = window.open('', '_blank', 'width=800,height=600');
+                    // popupWindow.document.write(data);
+                    // popupWindow.document.close();
+
+
+                    const iframe = document.getElementById('apiResponseFrame');
+                    iframe.srcdoc = data;
+                    console.log(iframe.contentWindow.document.body.scrollWidth);
+                    console.log(iframe.contentWindow.document.body.scrollHeight);
+                    iframe.onload = adjustIframeHeight;
+
+                })
+                .catch((error) => {
+                    console.log(error);
+
+                    submitButton.disabled = false;
+                })
+        });
+
+        // Add more input fields dynamically
+        function addRequirement() {
+            const div = document.createElement('div');
+            div.classList.add('requirement-inputs');
+            div.innerHTML = `<label for="additionalRequirements">Additional Requirement:</label>
+                             <input type="text" class="additional-requirement" name="additionalRequirements[]" placeholder="Enter additional requirement">
+                             <div class="control-buttons">
+                                 <button type="button" class="add-btn" onclick="addRequirement()">+</button>
+                                 <button type="button" class="remove-btn" onclick="removeRequirement(this)">-</button>
+                             </div>`;
+            document.getElementById('additionalRequirementsContainer').appendChild(div);
+        }
+
+        // Function to remove the input field
+        function removeRequirement(button) {
+            button.parentNode.parentNode.remove();
+        }
+
+        // Function to validate URL
+        function isValidURL(url) {
+            // Basic regex to check URL validity (can be enhanced based on requirements)
+            const urlPattern = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/i;
+            return urlPattern.test(url);
+        }
+
+
+        // Example POST method implementation:
+        async function postData(url = "", data = {}) {
+            // Default options are marked with *
+            const response = await fetch(url, {
+                method: "POST", // *GET, POST, PUT, DELETE, etc.
+                mode: "cors", // no-cors, *cors, same-origin
+                cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+                credentials: "same-origin", // include, *same-origin, omit
+                headers: {
+                    "Content-Type": "application/json",
+                    // 'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                redirect: "follow", // manual, *follow, error
+                referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+                body: JSON.stringify(data), // body data type must match "Content-Type" header
+            });
+            return response.json(); // parses JSON response into native JavaScript objects
+        }
+
+
+        function adjustIframeHeight() {
+            const iframe = document.getElementById('apiResponseFrame');
+            const contentHeight = iframe.contentWindow.document.body.scrollHeight + 'px';
+            const contentWidth = iframe.contentWindow.document.body.scrollWidth + 'px';
+            iframe.style.height = contentHeight;
+            iframe.style.width = window.innerWidth;
+
+            // console.log(contentHeight, "contentHeight", contentWidth, "scrennWidth", screenWidth);
+        }
+
+        const iframe = document.getElementById('apiResponseFrame');
+        // Adjust iframe height when content is loaded
+        iframe.onload = adjustIframeHeight;
+
+
+    </script>
+</body>
+
+</html>
