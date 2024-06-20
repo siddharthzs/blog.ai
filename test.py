@@ -12,9 +12,7 @@ headers = {
     'Accept': '*/*',
     'Accept-Encoding': 'gzip, deflate, br',
     'Connection': 'keep-alive',
-    'Authorization': 'Bearer YOUR_ACCESS_TOKEN',
     'Content-Type': 'application/json',
-    # Add any other headers that you see in Postman
 }
 
 response = requests.request("GET", url, headers=headers)
