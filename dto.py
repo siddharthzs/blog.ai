@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from pydantic import BaseModel, Field, HttpUrl, ValidationError
+from pydantic import BaseModel, HttpUrl, ValidationError
 
 class LinkDTO(BaseModel):
     link: HttpUrl
@@ -14,9 +14,9 @@ class IncludeDTO(BaseModel):
     redirectLink: List[LinkDTO] = []
     internalLink: List[LinkDTO] = []
     imageLink: List[LinkDTO] = []
-    blogTitle: str = ''
+    blogTitle: str
     metaDescription: str = ''
-    keywords: List[str] = []
+    additionalRequirement: List[str] = []
 
 class BlogAiDTO(BaseModel):
     scrap: ScrapDTO
@@ -24,8 +24,8 @@ class BlogAiDTO(BaseModel):
 
 class RequestDTO(BaseModel):
     blogAi: BlogAiDTO
-    version: int
-
+    model: str
+    version: int = 1
 
 
 def validate_blogai_dto(data: Dict[str, Any]) -> List[str]:
